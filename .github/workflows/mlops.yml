@@ -22,6 +22,10 @@ jobs:
         pip install -r requirements.txt
         pip install dvc
 
-    - name: Run DVC pipeline
+    - name: Run training
       run: |
-        dvc repro
+        python src/train.py
+
+    - name: Run evaluation
+      run: |
+        python src/evaluate.py
