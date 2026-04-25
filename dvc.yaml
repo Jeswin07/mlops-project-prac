@@ -11,3 +11,6 @@ stages:
     deps:
     - models/model.pkl
     - src/evaluate.py
+    metrics:
+    - metrics.json:
+        cache: false

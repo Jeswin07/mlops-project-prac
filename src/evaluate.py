@@ -1,19 +1,44 @@
 # src/evaluate.py
+
 import joblib
-from sklearn.datasets import load_iris
+import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
+import json
 
-# Load data
-data = load_iris()
-X, y = data.data, data.target # type: ignore
+# -----------------------------
+# Step 1: Load dataset (IMPORTANT)
+# -----------------------------
+df = pd.read_csv("data/dataset.csv")
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X = df.drop("target", axis=1)
+y = df["target"]
 
-# Load model
+# -----------------------------
+# Step 2: Same split as training
+# -----------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# -----------------------------
+# Step 3: Load model
+# -----------------------------
 model = joblib.load("models/model.pkl")
 
-# Predict
+# -----------------------------
+# Step 4: Predict
+# -----------------------------
 preds = model.predict(X_test)
 
-print("Accuracy:", accuracy_score(y_test, preds))
+# -----------------------------
+# Step 5: Evaluate
+# -----------------------------
+acc = accuracy_score(y_test, preds)
+print("Accuracy:", acc)
+
+# -----------------------------
+# Step 6: Save metrics (for DVC)
+# -----------------------------
+with open("metrics.json", "w") as f:
+    json.dump({"accuracy": acc}, f)
