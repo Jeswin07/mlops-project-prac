@@ -5,3 +5,4 @@ dvc
 fastapi
 uvicorn
 mlflow
+pytest
