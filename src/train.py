@@ -6,44 +6,70 @@ from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 import joblib
+import mlflow
+import mlflow.sklearn
 
 # -----------------------------
-# Step 1: Create dataset (simulate real data pipeline)
+# MLflow setup (IMPORTANT)
 # -----------------------------
-os.makedirs("data", exist_ok=True)
-
-data = load_iris()
-
-df = pd.DataFrame(data.data, columns=data.feature_names)#type: ignore
-df["target"] = data.target#type: ignore
-
-# Save dataset
-df.to_csv("data/dataset.csv", index=False)
-
-print("Dataset saved to data/dataset.csv")
+mlflow.set_tracking_uri("file:./mlruns")
+mlflow.set_experiment("mlops-exp")
 
 # -----------------------------
-# Step 2: Load dataset (IMPORTANT for MLOps flow)
+# Force training for experiments
 # -----------------------------
-df = pd.read_csv("data/dataset.csv")
+FORCE_TRAIN = True
 
-X = df.drop("target", axis=1)
-y = df["target"]
+if not FORCE_TRAIN:
+    if os.path.exists("models/model.pkl") and not os.path.exists("retrain.flag"):
+        print("Model is up-to-date. Skipping training.")
+        exit()
 
-# -----------------------------
-# Step 3: Train model
-# -----------------------------
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+print("Training model...")
 
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+with mlflow.start_run():
 
-# -----------------------------
-# Step 4: Save model
-# -----------------------------
-os.makedirs("models", exist_ok=True)
-joblib.dump(model, "models/model.pkl")
+    # -----------------------------
+    # Step 1: Create dataset
+    # -----------------------------
+    os.makedirs("data", exist_ok=True)
 
-print("Model trained and saved at models/model.pkl")
+    data = load_iris()
+
+    df = pd.DataFrame(data.data, columns=data.feature_names) #type: ignore
+    df["target"] = data.target#type: ignore
+
+    df.to_csv("data/dataset.csv", index=False)
+    print("Dataset saved")
+
+    # -----------------------------
+    # Step 2: Prepare data
+    # -----------------------------
+    X = df.drop("target", axis=1)
+    y = df["target"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    # -----------------------------
+    # Step 3: Train model
+    # -----------------------------
+    n_estimators = 100
+
+    model = RandomForestClassifier(n_estimators=n_estimators)
+    model.fit(X_train, y_train)
+
+    # -----------------------------
+    # Step 4: Save model
+    # -----------------------------
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(model, "models/model.pkl")
+
+    print("Model trained and saved")
+
+    # -----------------------------
+    # Step 5: MLflow logging
+    # -----------------------------
+    mlflow.log_param("n_estimators", n_estimators)
+    mlflow.sklearn.log_model(model, name="model")#type: ignore

@@ -29,3 +29,6 @@ jobs:
     - name: Run evaluation
       run: |
         python src/evaluate.py
+
+    - name: Run tests
+      run: pytest
